@@ -1,4 +1,4 @@
-//! Draws a controlable circle on the display.
+//! Draws a controllable circle on the display.
 #![no_std]
 #![no_main]
 
