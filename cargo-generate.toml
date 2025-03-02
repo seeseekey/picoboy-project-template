@@ -10,7 +10,7 @@ flash_method = { prompt = "Which flashing method do you intend to use?", choices
   "elf2uf2-rs",
   "custom",
   "none"
-], default = "probe-rs", type = "string" }
+], default = "elf2uf2-rs", type = "string" }
 
 [conditional.'flash_method == "custom"'.placeholders]
 flash_method_custom = { prompt = "Enter the runner command to use", type = "string" }

@@ -10,6 +10,17 @@ use defmt_rtt as _;
 use embedded_hal::digital::OutputPin;
 use panic_probe as _;
 
+use rp2040_hal::Spi;
+
+use embedded_graphics::mono_font::ascii::FONT_6X10;
+use embedded_graphics::mono_font::MonoTextStyleBuilder;
+use embedded_graphics::pixelcolor::BinaryColor;
+use embedded_graphics::text::{Baseline, Text};
+use embedded_graphics::prelude::*;
+
+use sh1106::prelude::GraphicsMode;
+use sh1106::Builder;
+
 // Provide an alias for our BSP so we can switch targets quickly.
 // Uncomment the BSP you included in Cargo.toml, the rest of the code does not need to change.
 use picoboy as bsp;
@@ -20,6 +31,7 @@ use bsp::hal::{
     sio::Sio,
     watchdog::Watchdog,
 };
+use rp2040_hal::fugit::RateExtU32;
 
 #[entry]
 fn main() -> ! {
@@ -54,22 +66,64 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
-    // This is the correct pin on the Raspberry Pico board. On other boards, even if they have an
-    // on-board LED, it might need to be changed.
-    //
-    // Notably, on the Pico W, the LED is not connected to any of the RP2040 GPIOs but to the cyw43 module instead.
-    // One way to do that is by using [embassy](https://github.com/embassy-rs/embassy/blob/main/examples/rp/src/bin/wifi_blinky.rs)
-    //
-    // If you have a Pico W and want to toggle a LED with a simple GPIO output pin, you can connect an external
-    // LED to one of the GPIO pins, and reference that pin here. Don't forget adding an appropriate resistor
-    // in series with the LED.
+    // Define display width and height
+    const DISPLAY_WIDTH: i32 = 128;
+    const DISPLAY_HEIGHT: i32 = 64;
+
+    // Configure SPI pins
+    let spi_sclk = pins.sck.into_function::<rp2040_hal::gpio::FunctionSpi>(); // SCK
+    let spi_mosi = pins.mosi.into_function::<rp2040_hal::gpio::FunctionSpi>(); // MOSI
+    let spi_miso = pins.joystick_left.into_function::<rp2040_hal::gpio::FunctionSpi>(); // MISO (not needed)
+
+    // Create spi instance
+    let spi = Spi::<_, _, _, 8>::new(pac.SPI0, (spi_mosi, spi_miso, spi_sclk));
+
+    // Init spi
+    let spi = spi.init(
+        &mut pac.RESETS,
+        clocks.peripheral_clock.freq(),
+        8_000_000u32.Hz(), // 8 MHz
+        embedded_hal::spi::MODE_0, // MODE_0 for SH1106
+    );
+
+    // Configure display pins
+    let dc = pins.dc.into_push_pull_output(); // Data/command pin
+    let mut rst = pins.reset.into_push_pull_output(); // Reset pin
+    let cs = pins.cs.into_push_pull_output(); // Chip select
+
+    // Reset display
+    rst.set_low().unwrap();
+    delay.delay_ms(10);
+    rst.set_high().unwrap();
+    delay.delay_ms(10);
+
+    // Create display interface
+    let mut display: GraphicsMode<_> = Builder::new().connect_spi(spi, dc, cs).into();
+
+    display.init().unwrap();
+    display.flush().unwrap();
+
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_6X10)
+        .text_color(BinaryColor::On)
+        .build();
+
+    Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
+        .draw(&mut display)
+        .unwrap();
+
+    Text::with_baseline("From Rust with love.", Point::new(0, 16), text_style, Baseline::Top)
+        .draw(&mut display)
+        .unwrap();
+
+    display.flush().unwrap();
+
+    // Red led running indicator
     let mut led_pin = pins.led_red.into_push_pull_output();
 
     loop {
-        info!("on!");
         led_pin.set_high().unwrap();
         delay.delay_ms(500);
-        info!("off!");
         led_pin.set_low().unwrap();
         delay.delay_ms(500);
     }
