@@ -1,13 +1,10 @@
-//! Blinks the LED on a Pico board
-//!
-//! This will blink an LED attached to GP25, which is the pin the Pico uses for the on-board LED.
+//! Draws a controlable circle on the display.
 #![no_std]
 #![no_main]
 
 use bsp::entry;
 use defmt::*;
 use defmt_rtt as _;
-// use embedded_hal::digital::OutputPin;
 use panic_probe as _;
 
 use rp2040_hal::Spi;
@@ -35,6 +32,7 @@ use bsp::hal::{
 use cortex_m::asm::delay;
 use embedded_graphics::primitives::{Circle, PrimitiveStyleBuilder};
 use rp2040_hal::fugit::RateExtU32;
+use rp2040_hal::gpio::FunctionSpi;
 
 #[entry]
 fn main() -> ! {
@@ -75,9 +73,7 @@ fn main() -> ! {
     // Configure SPI pins
     let spi_sclk = pins.sck.into_function::<rp2040_hal::gpio::FunctionSpi>(); // SCK
     let spi_mosi = pins.mosi.into_function::<rp2040_hal::gpio::FunctionSpi>(); // MOSI
-    let spi_miso = pins
-        .joystick_left
-        .into_function::<rp2040_hal::gpio::FunctionSpi>(); // MISO (not needed)
+    let spi_miso = pins.gpio16.into_function::<rp2040_hal::gpio::FunctionSpi>(); // MISO (not needed)
 
     // Create spi instance
     let spi = Spi::<_, _, _, 8>::new(pac.SPI0, (spi_mosi, spi_miso, spi_sclk));
@@ -135,7 +131,7 @@ fn main() -> ! {
     // Configuring joystick buttons
     let mut joystick_up = pins.joystick_up.into_pull_up_input();
     let mut joystick_down = pins.joystick_down.into_pull_up_input();
-    // let mut joystick_left = pins.joystick_left.into_pull_up_input();
+    let mut joystick_left = pins.joystick_left.into_pull_up_input();
     let mut joystick_right = pins.joystick_right.into_pull_up_input();
 
     let mut x: i32 = DISPLAY_WIDTH / 2;
@@ -164,9 +160,9 @@ fn main() -> ! {
             x = x.saturating_add(2);
         }
 
-        // if joystick_left.is_low().unwrap() {
-        //     x = x.saturating_sub(2);
-        // }
+        if joystick_left.is_low().unwrap() {
+            x = x.saturating_sub(2);
+        }
 
         // Draw a new circle
         let new_circle = Circle::new(Point::new(x, y), 25).into_styled(
