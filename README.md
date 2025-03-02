@@ -28,6 +28,20 @@ cargo install flip-link
 cargo install --locked elf2uf2-rs
 ```
 
+## Use cargo generate
+
+You can create a new project with cargo-generate. First install it:
+
+```sh
+cargo install cargo-generate
+```
+
+Then you can create a new project from the template:
+
+```sh
+cargo generate --git https://github.com/seeseekey/picoboy-project-template.git
+```
+
 ## Running
   
 For a debug build
