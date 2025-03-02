@@ -29,10 +29,8 @@ use bsp::hal::{
     sio::Sio,
     watchdog::Watchdog,
 };
-use cortex_m::asm::delay;
 use embedded_graphics::primitives::{Circle, PrimitiveStyleBuilder};
 use rp2040_hal::fugit::RateExtU32;
-use rp2040_hal::gpio::FunctionSpi;
 
 #[entry]
 fn main() -> ! {

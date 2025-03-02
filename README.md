@@ -27,7 +27,6 @@ cargo install flip-link
 # Installs the elf2uf2-rs runner
 cargo install --locked elf2uf2-rs
 ```
-If you get the error ``binary `cargo-embed` already exists`` during installation of probe-rs, run `cargo uninstall cargo-embed` to uninstall your older version of cargo-embed before trying again.
 
 ## Running
   
