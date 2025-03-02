@@ -5,6 +5,8 @@ Cargo.lock
 target/
 
 # editor files
+.idea
+
 .vscode/*
 !.vscode/*.md
 !.vscode/*.svd
